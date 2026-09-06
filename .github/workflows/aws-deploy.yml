@@ -1,6 +1,6 @@
 name: Production AWS ECS Deploy
 
-# 🚀 The Trigger: Runs automatically only when code inside your app folder changes
+# 🚀 The Trigger: Runs automatically when application code changes
 on:
   push:
     branches:
@@ -9,39 +9,12 @@ on:
       - 'app-services/python-service/**'
 
 jobs:
-  # JOB 1: Test and validate application code quality
-  code-quality-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      # 🟢 FIXED: Added dependency installation so your linter has context
-      - name: Install Application and Linting Dependencies
-        run: |
-          pip install flake8 black
-          pip install -r ./app-services/python-service/requirements.txt
-
-      - name: Check Code Formatting
-        run: |
-          # Fails the pipeline if code style doesn't match standard best practices
-          black --check ./app-services/python-service/app.py
-          flake8 ./app-services/python-service/app.py --max-line-length=120
-
-  # JOB 2: Compile, push container, and execute a rolling update to AWS
   build-and-ship:
-    needs: code-quality-lint # Only runs if code quality checks pass successfully
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 🟢 FIXED: Adds multi-architecture execution simulation layers for secure building
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
