@@ -25,3 +25,7 @@ module "ecr" {
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.public_subnets
 }
+
+output "pipeline_role_arn" {
+  value = module.ecr.github_actions_role_arn
+}

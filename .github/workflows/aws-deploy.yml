@@ -8,6 +8,11 @@ on:
     paths:
       - 'app-services/python-service/**'
 
+# 🔐 Grant permissions to fetch the OIDC cryptographic token from GitHub's authority
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-and-ship:
     runs-on: ubuntu-latest
@@ -36,12 +41,10 @@ jobs:
           push: true
           tags: dockervase/python-service:latest
 
-      - name: Configure AWS Credentials
+      - name: Configure AWS Credentials (OIDC Keyless)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          role-to-assume: arn:aws:iam::070593201803:role/github-actions-ecs-deploy-role
           aws-region: eu-north-1
 
       - name: Force AWS ECS Rolling Update

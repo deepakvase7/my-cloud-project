@@ -132,3 +132,49 @@ resource "aws_ecs_service" "python_service" {
     assign_public_ip = true 
   }
 }
+
+# 1. Create the OIDC Identity Provider for GitHub Trust
+resource "aws_iam_openid_connect_provider" "github" {
+  url             = "https://githubusercontent.com"
+  client_id_list  = ["://amazonaws.com"]
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1", "1c58a3a8518e8759bf075b76b750d4f2df264fcd"]
+}
+
+# 2. Create the IAM Role that GitHub Actions will temporarily assume
+resource "aws_iam_role" "github_actions_role" {
+  name = "github-actions-ecs-deploy-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Federated = aws_iam_openid_connect_provider.github.arn
+        }
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Condition = {
+          StringEquals = {
+            "://githubusercontent.com:aud" = "://amazonaws.com"
+          }
+          StringLike = {
+            # 🔐 SECURITY BOUNDARY: Only allow your specific repository to assume this role!
+            "://githubusercontent.com:sub" = "repo:deepakvase7/my-cloud-project:*"
+          }
+        }
+      }
+    ]
+  })
+}
+
+# 3. Attach full administrative power to this specific deployment role
+resource "aws_iam_role_policy_attachment" "github_admin_attach" {
+  role       = aws_iam_role.github_actions_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+# 4. Output the exact Role ARN so you can use it in your pipeline script
+output "github_actions_role_arn" {
+  value       = aws_iam_role.github_actions_role.arn
+  description = "The exact ARN string for GitHub Actions to use"
+}
