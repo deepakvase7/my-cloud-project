@@ -134,13 +134,19 @@ resource "aws_ecs_service" "python_service" {
 }
 
 # 1. Create the OIDC Identity Provider for GitHub Trust
+## 1. Dynamically fetch GitHub's live active certificate keys at runtime
+
+
+# 2. Automated OIDC Provider for GitHub Actions
+# 🟢 REPLACED: Hardcoded official production thumbprints to completely bypass network lookup errors
 resource "aws_iam_openid_connect_provider" "github" {
-  url             = "https://githubusercontent.com"
-  client_id_list  = ["://amazonaws.com"]
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1", "1c58a3a8518e8759bf075b76b750d4f2df264fcd"]
 }
 
-# 2. Create the IAM Role that GitHub Actions will temporarily assume
+
+# 3. Secure IAM Role with broad sub-domain allowance
 resource "aws_iam_role" "github_actions_role" {
   name = "github-actions-ecs-deploy-role"
 
@@ -148,24 +154,28 @@ resource "aws_iam_role" "github_actions_role" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
+        Effect    = "Allow"
+        Action    = "sts:AssumeRoleWithWebIdentity"
         Principal = {
           Federated = aws_iam_openid_connect_provider.github.arn
         }
-        Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
           StringEquals = {
-            "://githubusercontent.com:aud" = "://amazonaws.com"
+            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            # 🔐 SECURITY BOUNDARY: Only allow your specific repository to assume this role!
-            "://githubusercontent.com:sub" = "repo:deepakvase7/my-cloud-project:*"
+            "token.actions.githubusercontent.com:sub" = "repo:deepakvase7/my-cloud-project:*"
           }
         }
       }
     ]
   })
 }
+
+
+
+
+
 
 # 3. Attach full administrative power to this specific deployment role
 resource "aws_iam_role_policy_attachment" "github_admin_attach" {

@@ -8,7 +8,7 @@ def home():
     return jsonify({
         "status": "healthy",
         "environment": os.getenv("DD_ENV", "local-dev"),
-        "message": "Hello from my brand new keyless OIDC pipeline!"
+        "message": "Hello from my brand new keyless OIDC_ pipeline!"
     })
 
 if __name__ == '__main__':
