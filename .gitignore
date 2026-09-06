@@ -1,0 +1,11 @@
+# Ignore local Terraform directories and caches
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# Ignore Mac OS hidden system files
+.DS_Store
+
+# Ignore any secret environment variables files you might make later
+*.tfvars
