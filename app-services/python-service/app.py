@@ -8,7 +8,7 @@ def home():
     return jsonify({
         "status": "healthy",
         "environment": os.getenv("DD_ENV", "local-dev"),
-        "message": "Hello from your serverless ECS cluster!"
+        "message": "Hello from my fully automated production pipeline!"
     })
 
 if __name__ == '__main__':
